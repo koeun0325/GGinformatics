@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>스네이크 게임 with 최고 스코어</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    #scoreBoard {
+      font-size: 20px;
+      margin: 10px auto;
+      width: 400px;
+    }
+    canvas {
+      background: #f0f0f0;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <!-- 캔버스 위에 점수판 표시 -->
+  <div id="scoreBoard">Score: 0 | High Score: 0</div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreBoard = document.getElementById("scoreBoard");
+
+    const gridSize = 20;
+    const canvasSize = canvas.width;
+    const cellCount = canvasSize / gridSize;
+
+    let snake = [{ x: 5, y: 5 }];
+    let direction = { x: 0, y: 0 };
+
+    let food = { x: 10, y: 10 };
+    let score = 0;
+    let highScore = localStorage.getItem("highScore") ? parseInt(localStorage.getItem("highScore")) : 0;
+
+    // 점수판 업데이트 함수
+    function updateScoreBoard() {
+      scoreBoard.textContent = `Score: ${score} | High Score: ${highScore}`;
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      updateScoreBoard();
+    }
+
+    function update() {
+      // 방향 입력이 없는 경우 이동하지 않음
+      if (direction.x === 0 && direction.y === 0) return;
+
+      // 새로운 머리 계산
+      const newHead = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y
+      };
+
+      // 벽 충돌 체크
+      if (newHead.x < 0 || newHead.x >= cellCount || newHead.y < 0 || newHead.y >= cellCount) {
+        resetGame();
+        return;
+      }
+
+      // 자기 자신과 충돌 체크
+      for (let segment of snake) {
+        if (newHead.x === segment.x && newHead.y === segment.y) {
+          resetGame();
+          return;
+        }
+      }
+
+      // 머리 추가
+      snake.unshift(newHead);
+
+      // 먹이 섭취 여부 체크
+      if (newHead.x === food.x && newHead.y === food.y) {
+        score++;
+        placeFood();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function draw() {
+      // 캔버스 초기화
+      ctx.fillStyle = "#f0f0f0";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 스네이크 그리기
+      ctx.fillStyle = "green";
+      for (let segment of snake) {
+        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+      }
+
+      // 먹이 그리기
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+    }
+
+    function resetGame() {
+      // 최고 스코어 업데이트 후 저장
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
+      }
+      alert("게임 오버! 점수: " + score);
+      snake = [{ x: 5, y: 5 }];
+      direction = { x: 0, y: 0 };
+      score = 0;
+      placeFood();
+    }
+
+    function placeFood() {
+      food.x = Math.floor(Math.random() * cellCount);
+      food.y = Math.floor(Math.random() * cellCount);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "ArrowUp":
+          if (direction.y !== 1) direction = { x: 0, y: -1 };
+          break;
+        case "ArrowDown":
+          if (direction.y !== -1) direction = { x: 0, y: 1 };
+          break;
+        case "ArrowLeft":
+          if (direction.x !== 1) direction = { x: -1, y: 0 };
+          break;
+        case "ArrowRight":
+          if (direction.x !== -1) direction = { x: 1, y: 0 };
+          break;
+      }
+    });
+
+    setInterval(gameLoop, 150);
+  </script>
+</body>
+</html>
